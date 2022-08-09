@@ -1,10 +1,8 @@
-import {
-  AST,
-  AST_NODE_TYPES,
-  parse,
-} from "@typescript-eslint/typescript-estree";
-import { parseComponent } from "vue-template-compiler";
+import { AST, AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
+import { ASTElement, compile, parseComponent } from "vue-template-compiler";
+// HACK
 import { ArrowFunctionExpression } from ".pnpm/@typescript-eslint+types@5.32.0/node_modules/@typescript-eslint/types/dist/generated/ast-spec";
+import { JsxElement } from "typescript";
 
 const createReactAst = (
   params: ArrowFunctionExpression["params"],
@@ -50,9 +48,43 @@ const createReactAst = (
   type: AST_NODE_TYPES.Program,
 });
 
+const templateAstToJsxAst = (templateAst: ASTElement): any => {
+  // html
+  if (templateAst.type === 1)
+    return {
+      type: "JSXElement",
+      openingElement: {
+        attributes: [],
+        name: {
+          name: templateAst.tag,
+          type: "JSXIdentifier",
+        },
+        selfClosing: false,
+        type: "JSXOpeningElement",
+        typeParameters: undefined,
+      },
+      closingElement: {
+        name: {
+          name: templateAst.tag,
+          type: "JSXIdentifier",
+        },
+        type: "JSXClosingElement",
+      },
+      children: templateAst.children.map(templateAstToJsxAst),
+    };
+  // text
+  if (templateAst.type === 3)
+    return {
+      type: AST_NODE_TYPES.JSXText,
+      value: templateAst.text,
+      raw: templateAst.text,
+    };
+};
+
 export default (vueStr: string): AST<{ jsx: true }> => {
   const scfDescriptor = parseComponent(vueStr);
-  if (!scfDescriptor.template) {
+
+  if (!scfDescriptor.template || !scfDescriptor.template.content) {
     return createReactAst([], {
       children: [],
       // @ts-ignore
@@ -62,4 +94,7 @@ export default (vueStr: string): AST<{ jsx: true }> => {
       type: AST_NODE_TYPES.JSXFragment,
     });
   }
+
+  const templateAst = compile(scfDescriptor.template.content).ast;
+  return createReactAst([], templateAstToJsxAst(templateAst));
 };
