@@ -36,9 +36,9 @@ describe("different ASTs", () => {
     }).toThrow(
       [
         "ASTs are not equivalent",
-        "program > body > 0 > declarations > 0 > init > children > 3 > openingElement > attributes > 0 > value > extra > rawValue",
-        "light",
-        "dark",
+        "program > body > 0 > declarations > 0 > init > children > 3 > openingElement > attributes > 0 > value > value",
+        '"light"',
+        '"dark"',
         "Primitives are not equal",
         `<li class="light">world</li>`,
         `<li class="dark">world</li>`,

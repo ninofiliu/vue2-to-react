@@ -33,8 +33,8 @@ const errMsg = (result: RecResult & { equal: false }) =>
   [
     "ASTs are not equivalent",
     result.path.join(" > "),
-    result.a,
-    result.b,
+    JSON.stringify(result.a),
+    JSON.stringify(result.b),
     result.reason,
   ].join("\n");
 const errMsgWithCode = (
