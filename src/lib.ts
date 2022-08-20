@@ -1,54 +1,8 @@
-import { AST, AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
-import { ASTElement, compile, parseComponent } from "vue-template-compiler";
-// HACK
-import { ArrowFunctionExpression } from ".pnpm/@typescript-eslint+types@5.32.0/node_modules/@typescript-eslint/types/dist/generated/ast-spec";
-import { JsxElement } from "typescript";
+import { parse } from "@babel/parser";
+import { JSXElement, JSXText } from "@babel/types";
+import { ASTNode, compile, parseComponent } from "vue-template-compiler";
 
-const createReactAst = (
-  params: ArrowFunctionExpression["params"],
-  body: ArrowFunctionExpression["body"]
-): AST<{ jsx: true }> => ({
-  body: [
-    // import React from "react";
-    {
-      assertions: [],
-      importKind: "value",
-      // @ts-ignore
-      source: {
-        raw: '"react"',
-        type: AST_NODE_TYPES.Literal,
-        value: "react",
-      },
-      specifiers: [
-        {
-          // @ts-ignore
-          local: { name: "React", type: AST_NODE_TYPES.Identifier },
-          type: AST_NODE_TYPES.ImportDefaultSpecifier,
-        },
-      ],
-      type: AST_NODE_TYPES.ImportDeclaration,
-    },
-    // export default (PARAMS) => BODY
-    {
-      // @ts-ignore
-      declaration: {
-        async: false,
-        body,
-        expression: true,
-        generator: false,
-        id: null,
-        params,
-        type: AST_NODE_TYPES.ArrowFunctionExpression,
-      },
-      exportKind: "value",
-      type: AST_NODE_TYPES.ExportDefaultDeclaration,
-    },
-  ],
-  sourceType: "module",
-  type: AST_NODE_TYPES.Program,
-});
-
-const templateAstToJsxAst = (templateAst: ASTElement): any => {
+const templateAstToJsxAst = (templateAst: ASTNode): JSXElement | JSXText => {
   // html
   if (templateAst.type === 1)
     return {
@@ -75,26 +29,25 @@ const templateAstToJsxAst = (templateAst: ASTElement): any => {
   // text
   if (templateAst.type === 3)
     return {
-      type: AST_NODE_TYPES.JSXText,
-      value: templateAst.text,
-      raw: templateAst.text,
+      type: "JSXText",
+      value: templateAst.text || "",
     };
+  throw new Error(`Unknown type ${templateAst.type}`);
 };
 
-export default (vueStr: string): AST<{ jsx: true }> => {
+export default (vueStr: string) => {
   const scfDescriptor = parseComponent(vueStr);
+  const ast = parse(`import React from "react";export default () => <></>;`, {
+    sourceType: "module",
+    plugins: ["jsx", "typescript"],
+  });
 
   if (!scfDescriptor.template || !scfDescriptor.template.content) {
-    return createReactAst([], {
-      children: [],
-      // @ts-ignore
-      closingFragment: { type: AST_NODE_TYPES.JSXClosingFragment },
-      // @ts-ignore
-      openingFragment: { type: AST_NODE_TYPES.JSXOpeningFragment },
-      type: AST_NODE_TYPES.JSXFragment,
-    });
+    return ast;
   }
 
-  const templateAst = compile(scfDescriptor.template.content).ast;
-  return createReactAst([], templateAstToJsxAst(templateAst));
+  const templateAst = compile(scfDescriptor.template.content).ast as ASTNode;
+  // @ts-ignore
+  ast.program.body[1].declaration.body = templateAstToJsxAst(templateAst!);
+  return ast;
 };
