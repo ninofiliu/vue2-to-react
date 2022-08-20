@@ -1,69 +1,74 @@
-import { AST } from "@typescript-eslint/typescript-estree";
+import generate from "@babel/generator";
+import { ParseResult } from "@babel/parser";
+import { File } from "@babel/types";
+import compareAsts from "./compareAsts";
 
-class NotEquivalentError extends Error {
-  constructor(reason: string, a: unknown, b: unknown, path: string[]) {
-    super(`${reason}: ${JSON.stringify({ path, a, b }, null, 2)}`);
-  }
-}
+type Node = Parameters<typeof generate>["0"];
 
-const nodeIsUseless = (node: unknown) =>
-  node !== null &&
-  typeof node === "object" &&
-  "type" in node &&
+const isJsxNode = (x: unknown): x is Node =>
+  x !== null &&
+  typeof x === "object" &&
+  "type" in x &&
   // @ts-ignore
-  node.type === "JSXText" &&
-  // @ts-ignore
-  node.value.trim() === "";
+  x.type === "JSXElement";
 
-const rec = (a: unknown, b: unknown, path: string[]): void => {
-  if (a === null || typeof a !== "object") {
-    if (a !== b) {
-      if (
-        typeof a === "string" &&
-        typeof b === "string" &&
-        a.replaceAll(/\s+/g, " ") === a.replaceAll(/\s+/g, " ")
-      ) {
-        return;
-      }
-      throw new NotEquivalentError("Primitives are not equal", a, b, path);
-    }
-    return;
-  }
-  if (b === null || typeof b !== "object") {
-    throw new NotEquivalentError("a is an object but b is not", a, b, path);
-  }
+type RecResult =
+  | { equal: true }
+  | {
+      equal: false;
+      a: unknown;
+      b: unknown;
+      path: string[];
+      reason: string;
+    };
 
-  for (const c of [a, b]) {
-    if (nodeIsUseless(c)) return;
-  }
+const get = (obj: unknown, path: string[]): unknown =>
+  path.length
+    ? obj !== null &&
+      typeof obj === "object" &&
+      get(obj[path[0] as keyof typeof obj], path.slice(1))
+    : obj;
 
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b)) {
-      throw new NotEquivalentError("a is an array but b is not", a, b, path);
+const errMsg = (result: RecResult & { equal: false }) =>
+  [
+    "ASTs are not equivalent",
+    result.path.join(" > "),
+    result.a,
+    result.b,
+    result.reason,
+  ].join("\n");
+const errMsgWithCode = (
+  result: RecResult & { equal: false },
+  codeA?: string,
+  codeB?: string
+) => [errMsg(result), codeA, codeB].join("\n");
+
+export default (astA: ParseResult<File>, astB: ParseResult<File>) => {
+  const result = compareAsts(astA, astB, []);
+  if (result.equal === true) return;
+  const path = [...result.path];
+
+  do {
+    let codeA = "";
+    let codeB = "";
+    const maybeNodeA = get(astA, path);
+    const maybeNodeB = get(astB, path);
+    if (isJsxNode(maybeNodeA)) {
+      try {
+        codeA = generate(maybeNodeA).code;
+      } catch (e) {}
     }
-    const aChildrenToCompare = a.filter((node) => !nodeIsUseless(node));
-    const bChildrenToCompare = a.filter((node) => !nodeIsUseless(node));
-    if (aChildrenToCompare.length !== bChildrenToCompare.length) {
-      throw new NotEquivalentError(
-        "a and b do not have the same number of useful children",
-        a,
-        b,
-        path
-      );
+    if (isJsxNode(maybeNodeB)) {
+      try {
+        codeB = generate(maybeNodeB).code;
+      } catch (e) {}
     }
-    for (let i = 0; i < aChildrenToCompare.length; i++) {
-      rec(aChildrenToCompare[i], bChildrenToCompare[i], [...path, `${i}`]);
+    if (codeA && codeB) {
+      throw new Error(errMsgWithCode(result, codeA, codeB));
     }
-  } else {
-    for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
-      rec(a[key], b[key], [...path, key]);
-    }
-  }
+    path.pop();
+  } while (path.length);
+  throw new Error(
+    errMsgWithCode(result, generate(astA).code, generate(astB).code)
+  );
 };
-
-const expectAstsToBeEquivalent = (
-  astA: AST<{ jsx: true }>,
-  astB: AST<{ jsx: true }>
-) => rec(astA, astB, []);
-
-export default expectAstsToBeEquivalent;
