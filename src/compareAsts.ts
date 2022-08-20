@@ -67,6 +67,7 @@ const compareAsts = (a: unknown, b: unknown, path: string[]): RecResult => {
     keys.delete("start");
     keys.delete("end");
     keys.delete("loc");
+    keys.delete("extra");
     for (const key of keys) {
       const childResult = compareAsts(
         a[key as keyof typeof a],

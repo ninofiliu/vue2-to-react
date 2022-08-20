@@ -53,16 +53,7 @@ describe("different ASTs", () => {
       a: "hello",
       b: "bye",
       equal: false,
-      path: [
-        "program",
-        "body",
-        "0",
-        "expression",
-        "children",
-        "0",
-        "extra",
-        "rawValue",
-      ],
+      path: ["program", "body", "0", "expression", "children", "0", "value"],
       reason: "Primitives are not equal",
     });
   });
@@ -113,8 +104,7 @@ describe("different ASTs", () => {
         "attributes",
         "0",
         "value",
-        "extra",
-        "rawValue",
+        "value",
       ],
       reason: "Primitives are not equal",
     });
