@@ -1,4 +1,4 @@
-import { parse } from "@babel/parser";
+import parse from "./parse";
 import { JSXElement, JSXText } from "@babel/types";
 import { ASTNode, compile, parseComponent } from "vue-template-compiler";
 
@@ -36,18 +36,15 @@ const templateAstToJsxAst = (templateAst: ASTNode): JSXElement | JSXText => {
 };
 
 export default (vueStr: string) => {
-  const scfDescriptor = parseComponent(vueStr);
-  const ast = parse(`import React from "react";export default () => <></>;`, {
-    sourceType: "module",
-    plugins: ["jsx", "typescript"],
-  });
+  const sfcDescriptor = parseComponent(vueStr);
+  const tsxAst = parse(`import React from "react";export default () => <></>;`);
 
-  if (!scfDescriptor.template || !scfDescriptor.template.content) {
-    return ast;
+  if (!sfcDescriptor.template || !sfcDescriptor.template.content) {
+    return tsxAst;
   }
 
-  const templateAst = compile(scfDescriptor.template.content).ast as ASTNode;
+  const templateAst = compile(sfcDescriptor.template.content).ast as ASTNode;
   // @ts-ignore
-  ast.program.body[1].declaration.body = templateAstToJsxAst(templateAst!);
-  return ast;
+  tsxAst.program.body[1].declaration.body = templateAstToJsxAst(templateAst!);
+  return tsxAst;
 };

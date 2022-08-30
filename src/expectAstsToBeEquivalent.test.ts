@@ -1,11 +1,11 @@
-import { parse } from "@babel/parser";
+import parse from "./parse";
 import expectAstsToBeEquivalent from "./expectAstsToBeEquivalent";
 
 describe("equivalent ASTs", () => {
   it("should not throw any error", () => {
     expectAstsToBeEquivalent(
-      parse("<div>hello</div>", { plugins: ["jsx", "typescript"] }),
-      parse("<div> hello </div>", { plugins: ["jsx", "typescript"] })
+      parse("<div>hello</div>"),
+      parse("<div> hello </div>")
     );
   });
 });
@@ -20,8 +20,7 @@ describe("different ASTs", () => {
               <li>hello</li>
               <li class="light">world</li>
             </ul>
-        `,
-          { plugins: ["jsx", "typescript"] }
+        `
         ),
         parse(
           `
@@ -29,8 +28,7 @@ describe("different ASTs", () => {
               <li>hello</li>
               <li class="dark">world</li>
             </ul>
-        `,
-          { plugins: ["jsx", "typescript"] }
+        `
         )
       );
     }).toThrow(

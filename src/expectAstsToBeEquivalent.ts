@@ -1,6 +1,6 @@
 import generate from "@babel/generator";
-import { ParseResult } from "@babel/parser";
-import { File } from "@babel/types";
+import type { ParseResult } from "@babel/parser";
+import type { File } from "@babel/types";
 import compareAsts from "./compareAsts";
 
 type Node = Parameters<typeof generate>["0"];
