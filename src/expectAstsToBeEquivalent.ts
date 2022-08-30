@@ -36,12 +36,12 @@ const errMsg = (result: RecResult & { equal: false }) =>
     JSON.stringify(result.a),
     JSON.stringify(result.b),
     result.reason,
-  ].join("\n");
+  ].join("\n\n");
 const errMsgWithCode = (
   result: RecResult & { equal: false },
   codeA?: string,
   codeB?: string
-) => [errMsg(result), codeA, codeB].join("\n");
+) => [errMsg(result), codeA, codeB].join("\n\n");
 
 export default (astA: ParseResult<File>, astB: ParseResult<File>) => {
   const result = compareAsts(astA, astB, []);

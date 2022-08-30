@@ -40,7 +40,7 @@ describe("different ASTs", () => {
         "Primitives are not equal",
         `<li class="light">world</li>`,
         `<li class="dark">world</li>`,
-      ].join("\n")
+      ].join("\n\n")
     );
   });
 });
