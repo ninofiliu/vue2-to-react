@@ -64,10 +64,10 @@ const compareAsts = (a: unknown, b: unknown, path: string[]): RecResult => {
     }
   } else {
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-    keys.delete("start");
-    keys.delete("end");
-    keys.delete("loc");
-    keys.delete("extra");
+    const ignoredKeys = ["start", "end", "loc", "extra", "id"];
+    for (const key of ignoredKeys) {
+      keys.delete(key);
+    }
     for (const key of keys) {
       const childResult = compareAsts(
         a[key as keyof typeof a],
