@@ -10,6 +10,7 @@ import {
   compile,
   parseComponent,
 } from "vue-template-compiler";
+import computeReactData from "./computeReactData";
 import getComponentConfig from "./getComponentConfig";
 import { parse, parseExpression } from "./parser";
 
@@ -87,7 +88,24 @@ export default (vueStr: string) => {
   // add react import at the top of the file
   ast.program.body.unshift(parse('import React from "react";').program.body[0]);
 
-  const { exportDefaultStatement } = getComponentConfig(ast);
+  // remove Vue import
+  ast.program.body = ast.program.body.filter(
+    (statement) =>
+      !(
+        statement.type === "ImportDeclaration" &&
+        statement.source.value === "vue"
+      )
+  );
+
+  const { exportDefaultStatement, componentConfigNode } =
+    getComponentConfig(ast);
+
+  const reactData = computeReactData(componentConfigNode);
+  if (reactData.length) {
+    ast.program.body.unshift(
+      parse('import { useState } from "react";').program.body[0]
+    );
+  }
 
   exportDefaultStatement.declaration = {
     type: "ArrowFunctionExpression",
@@ -97,9 +115,11 @@ export default (vueStr: string) => {
     body: {
       type: "BlockStatement",
       body: [
+        // @ts-ignore
+        ...reactData,
+        // @ts-ignore
         {
           type: "ReturnStatement",
-          // @ts-ignore
           argument: templateAst
             ? templateAstToJsxAst(templateAst)
             : {
