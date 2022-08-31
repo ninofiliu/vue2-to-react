@@ -1,35 +1,15 @@
 import { parseExpression } from "./parser";
 import { ObjectExpression } from "@babel/types";
 import getDataNode from "./getDataNode";
-
-const removeFields = (obj: unknown, fields: string[]) => {
-  if (obj === null || typeof obj !== "object") return;
-  for (const key in obj) {
-    if (fields.includes(key)) {
-      delete obj[key as keyof typeof obj];
-    } else {
-      removeFields(obj[key as keyof typeof obj], fields);
-    }
-  }
-};
+import removeIgnoredAstFieldsInPlace from "./removeIgnoredAstFieldsInPlace";
 
 const success = (componentConfigCode: string, expectedDataCode: string) => {
   const componentConfigNode = parseExpression(
     componentConfigCode
   ) as ObjectExpression;
-  const ignoredFields = [
-    "column",
-    "comments",
-    "end",
-    "errors",
-    "extra",
-    "index",
-    "loc",
-    "start",
-  ];
-  removeFields(componentConfigNode, ignoredFields);
+  removeIgnoredAstFieldsInPlace(componentConfigNode);
   const expectedDataNode = parseExpression(expectedDataCode);
-  removeFields(expectedDataNode, ignoredFields);
+  removeIgnoredAstFieldsInPlace(expectedDataNode);
   expect(getDataNode(componentConfigNode)).toEqual(expectedDataNode);
 };
 
