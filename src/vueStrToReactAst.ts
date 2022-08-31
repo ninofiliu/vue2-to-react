@@ -11,6 +11,7 @@ import {
   compile,
   parseComponent,
 } from "vue-template-compiler";
+import computeReactData from "./computeReactData";
 import { parse, parseExpression } from "./parser";
 
 const vueAttrToReactAttr = (
@@ -92,20 +93,30 @@ export default (vueStr: string) => {
   ) as ExportDefaultDeclaration;
   if (!exportDefault)
     throw new Error("Can not transpile file with no default export");
+
   exportDefault.declaration = {
     type: "ArrowFunctionExpression",
     generator: false,
     async: false,
     params: [],
-    // @ts-ignore
-    body: templateAst
-      ? templateAstToJsxAst(templateAst)
-      : {
-          type: "JSXFragment",
-          openingFragment: { type: "JSXOpeningFragment" },
-          closingFragment: { type: "JSXClosingFragment" },
-          children: [],
+    body: {
+      type: "BlockStatement",
+      body: [
+        {
+          type: "ReturnStatement",
+          // @ts-ignore
+          argument: templateAst
+            ? templateAstToJsxAst(templateAst)
+            : {
+                type: "JSXFragment",
+                openingFragment: { type: "JSXOpeningFragment" },
+                closingFragment: { type: "JSXClosingFragment" },
+                children: [],
+              },
         },
+      ],
+      directives: [],
+    },
   };
 
   return ast;
