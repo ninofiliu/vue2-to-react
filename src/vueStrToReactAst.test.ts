@@ -1,15 +1,13 @@
 import { resolve } from "path";
-import { readdirSync } from "fs";
-import { readFile } from "fs/promises";
+import { readFile, readdir } from "fs/promises";
 import vueStrToReactAst from "./vueStrToReactAst";
 import expectAstsToBeEquivalent from "./expectAstsToBeEquivalent";
 import { parse } from "./parser";
 
-const dir = readdirSync(resolve(__dirname, "../fixtures"));
+it("works on all fixtures", async () => {
+  const dir = await readdir(resolve(__dirname, "../fixtures"));
 
-for (const tsxPath of dir.filter((name) => name.endsWith(".tsx"))) {
-  const testName = /^[^\.]*/.exec(tsxPath)![0];
-  it(testName, async () => {
+  for (const tsxPath of dir.filter((name) => name.endsWith(".tsx"))) {
     const tsxStr = await readFile(
       resolve(__dirname, "../fixtures", tsxPath),
       "utf8"
@@ -22,5 +20,5 @@ for (const tsxPath of dir.filter((name) => name.endsWith(".tsx"))) {
     );
     const actualAst = vueStrToReactAst(vueStr);
     expectAstsToBeEquivalent(actualAst, tsxAst);
-  });
-}
+  }
+});
