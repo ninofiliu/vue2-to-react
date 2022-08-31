@@ -1,37 +1,69 @@
 import parse from "./parse";
-import { ExportDefaultDeclaration, JSXElement, JSXText } from "@babel/types";
-import { ASTNode, compile, parseComponent } from "vue-template-compiler";
+import {
+  ExportDefaultDeclaration,
+  ExpressionStatement,
+  JSXAttribute,
+  JSXElement,
+  JSXText,
+} from "@babel/types";
+import {
+  ASTElement,
+  ASTNode,
+  compile,
+  parseComponent,
+} from "vue-template-compiler";
+import { parseExpression } from "@babel/parser";
+
+const vueAttrToReactAttr = (
+  vueAttr: ASTElement["attrsList"][number]
+): JSXAttribute => {
+  if (vueAttr.name.startsWith(":")) {
+    const name = vueAttr.name.slice(1);
+    return {
+      type: "JSXAttribute",
+      name: { type: "JSXIdentifier", name },
+      value: {
+        type: "JSXExpressionContainer",
+        expression: (
+          parse(vueAttr.value).program.body[0] as ExpressionStatement
+        ).expression,
+      },
+    };
+  } else {
+    return {
+      type: "JSXAttribute",
+      name: { type: "JSXIdentifier", name: vueAttr.name },
+      value: { type: "StringLiteral", value: vueAttr.value },
+    };
+  }
+};
 
 const templateAstToJsxAst = (templateAst: ASTNode): JSXElement | JSXText => {
   // html
-  if (templateAst.type === 1)
+  if (templateAst.type === 1) {
     return {
       type: "JSXElement",
       openingElement: {
-        attributes: [],
-        name: {
-          name: templateAst.tag,
-          type: "JSXIdentifier",
-        },
+        attributes: templateAst.attrsList.map(vueAttrToReactAttr),
+        name: { name: templateAst.tag, type: "JSXIdentifier" },
         selfClosing: false,
         type: "JSXOpeningElement",
         typeParameters: undefined,
       },
       closingElement: {
-        name: {
-          name: templateAst.tag,
-          type: "JSXIdentifier",
-        },
+        name: { name: templateAst.tag, type: "JSXIdentifier" },
         type: "JSXClosingElement",
       },
       children: templateAst.children.map(templateAstToJsxAst),
     };
+  }
   // text
-  if (templateAst.type === 3)
+  if (templateAst.type === 3) {
     return {
       type: "JSXText",
       value: templateAst.text || "",
     };
+  }
   throw new Error(`Unknown type ${templateAst.type}`);
 };
 
