@@ -64,7 +64,16 @@ const compareAsts = (a: unknown, b: unknown, path: string[]): RecResult => {
     }
   } else {
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-    const ignoredKeys = ["start", "end", "loc", "extra", "id"];
+    const ignoredKeys = [
+      "start",
+      "end",
+      "loc",
+      "extra",
+      "id",
+      // assume <Foo></Bar> will never happen
+      "closingElement",
+      "selfClosing",
+    ];
     for (const key of ignoredKeys) {
       keys.delete(key);
     }
