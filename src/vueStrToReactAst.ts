@@ -1,9 +1,10 @@
 import parse from "./parse";
-import {
+import type {
   ExportDefaultDeclaration,
   ExpressionStatement,
   JSXAttribute,
   JSXElement,
+  JSXExpressionContainer,
   JSXText,
 } from "@babel/types";
 import {
@@ -12,7 +13,6 @@ import {
   compile,
   parseComponent,
 } from "vue-template-compiler";
-import { parseExpression } from "@babel/parser";
 
 const vueAttrToReactAttr = (
   vueAttr: ASTElement["attrsList"][number]
@@ -38,7 +38,9 @@ const vueAttrToReactAttr = (
   }
 };
 
-const templateAstToJsxAst = (templateAst: ASTNode): JSXElement | JSXText => {
+const templateAstToJsxAst = (
+  templateAst: ASTNode
+): JSXElement | JSXText | JSXExpressionContainer => {
   // html
   if (templateAst.type === 1) {
     return {
@@ -55,6 +57,16 @@ const templateAstToJsxAst = (templateAst: ASTNode): JSXElement | JSXText => {
         type: "JSXClosingElement",
       },
       children: templateAst.children.map(templateAstToJsxAst),
+    };
+  }
+  // moustache
+  if (templateAst.type === 2) {
+    // '{{ foo }}' -> 'foo'
+    const expressionStr = templateAst.text.slice(0, -2).slice(2);
+    return {
+      type: "JSXExpressionContainer",
+      expression: (parse(expressionStr).program.body[0] as ExpressionStatement)
+        .expression,
     };
   }
   // text
