@@ -1,5 +1,4 @@
 import type {
-  ExportDefaultDeclaration,
   JSXAttribute,
   JSXElement,
   JSXExpressionContainer,
@@ -11,7 +10,7 @@ import {
   compile,
   parseComponent,
 } from "vue-template-compiler";
-import computeReactData from "./computeReactData";
+import getComponentConfig from "./getComponentConfig";
 import { parse, parseExpression } from "./parser";
 
 const vueAttrToReactAttr = (
@@ -88,13 +87,9 @@ export default (vueStr: string) => {
   // add react import at the top of the file
   ast.program.body.unshift(parse('import React from "react";').program.body[0]);
 
-  const exportDefault = ast.program.body.find(
-    (node) => node.type == "ExportDefaultDeclaration"
-  ) as ExportDefaultDeclaration;
-  if (!exportDefault)
-    throw new Error("Can not transpile file with no default export");
+  const { exportDefaultStatement } = getComponentConfig(ast);
 
-  exportDefault.declaration = {
+  exportDefaultStatement.declaration = {
     type: "ArrowFunctionExpression",
     generator: false,
     async: false,
