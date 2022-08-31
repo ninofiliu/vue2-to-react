@@ -1,4 +1,4 @@
-import parse from "./parse";
+import { parse } from "./parser";
 import compareAsts from "./compareAsts";
 
 describe("equivalent ASTs", () => {

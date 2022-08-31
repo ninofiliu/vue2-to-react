@@ -1,7 +1,5 @@
-import parse from "./parse";
 import type {
   ExportDefaultDeclaration,
-  ExpressionStatement,
   JSXAttribute,
   JSXElement,
   JSXExpressionContainer,
@@ -13,6 +11,7 @@ import {
   compile,
   parseComponent,
 } from "vue-template-compiler";
+import { parse, parseExpression } from "./parser";
 
 const vueAttrToReactAttr = (
   vueAttr: ASTElement["attrsList"][number]
@@ -24,9 +23,7 @@ const vueAttrToReactAttr = (
       name: { type: "JSXIdentifier", name },
       value: {
         type: "JSXExpressionContainer",
-        expression: (
-          parse(vueAttr.value).program.body[0] as ExpressionStatement
-        ).expression,
+        expression: parseExpression(vueAttr.value),
       },
     };
   } else {
@@ -41,42 +38,42 @@ const vueAttrToReactAttr = (
 const templateAstToJsxAst = (
   templateAst: ASTNode
 ): JSXElement | JSXText | JSXExpressionContainer => {
-  // html
-  if (templateAst.type === 1) {
-    return {
-      type: "JSXElement",
-      openingElement: {
-        attributes: templateAst.attrsList.map(vueAttrToReactAttr),
-        name: { name: templateAst.tag, type: "JSXIdentifier" },
-        selfClosing: false,
-        type: "JSXOpeningElement",
-        typeParameters: undefined,
-      },
-      closingElement: {
-        name: { name: templateAst.tag, type: "JSXIdentifier" },
-        type: "JSXClosingElement",
-      },
-      children: templateAst.children.map(templateAstToJsxAst),
-    };
+  switch (templateAst.type) {
+    case 1: {
+      // html
+      return {
+        type: "JSXElement",
+        openingElement: {
+          attributes: templateAst.attrsList.map(vueAttrToReactAttr),
+          name: { name: templateAst.tag, type: "JSXIdentifier" },
+          selfClosing: false,
+          type: "JSXOpeningElement",
+          typeParameters: undefined,
+        },
+        closingElement: {
+          name: { name: templateAst.tag, type: "JSXIdentifier" },
+          type: "JSXClosingElement",
+        },
+        children: templateAst.children.map(templateAstToJsxAst),
+      };
+    }
+    case 2: {
+      // moustache
+      // '{{ foo }}' -> 'foo'
+      const expressionStr = templateAst.text.slice(0, -2).slice(2);
+      return {
+        type: "JSXExpressionContainer",
+        expression: parseExpression(expressionStr),
+      };
+    }
+    case 3: {
+      // text
+      return {
+        type: "JSXText",
+        value: templateAst.text || "",
+      };
+    }
   }
-  // moustache
-  if (templateAst.type === 2) {
-    // '{{ foo }}' -> 'foo'
-    const expressionStr = templateAst.text.slice(0, -2).slice(2);
-    return {
-      type: "JSXExpressionContainer",
-      expression: (parse(expressionStr).program.body[0] as ExpressionStatement)
-        .expression,
-    };
-  }
-  // text
-  if (templateAst.type === 3) {
-    return {
-      type: "JSXText",
-      value: templateAst.text || "",
-    };
-  }
-  throw new Error(`Unknown type ${templateAst.type}`);
 };
 
 export default (vueStr: string) => {

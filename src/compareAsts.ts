@@ -70,6 +70,8 @@ const compareAsts = (a: unknown, b: unknown, path: string[]): RecResult => {
       "loc",
       "extra",
       "id",
+      "comments",
+      "errors",
       // assume <Foo></Bar> will never happen
       "closingElement",
       "selfClosing",

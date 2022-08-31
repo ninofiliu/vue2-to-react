@@ -1,4 +1,4 @@
-import parse from "./parse";
+import { parse } from "./parser";
 import expectAstsToBeEquivalent from "./expectAstsToBeEquivalent";
 
 describe("equivalent ASTs", () => {

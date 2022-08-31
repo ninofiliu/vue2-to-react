@@ -3,7 +3,7 @@ import { readdirSync } from "fs";
 import { readFile } from "fs/promises";
 import vueStrToReactAst from "./vueStrToReactAst";
 import expectAstsToBeEquivalent from "./expectAstsToBeEquivalent";
-import parse from "./parse";
+import { parse } from "./parser";
 
 const dir = readdirSync(resolve(__dirname, "../fixtures"));
 
