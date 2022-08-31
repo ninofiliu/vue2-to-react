@@ -1,81 +1,8 @@
-import type {
-  JSXAttribute,
-  JSXElement,
-  JSXExpressionContainer,
-  JSXText,
-} from "@babel/types";
-import {
-  ASTElement,
-  ASTNode,
-  compile,
-  parseComponent,
-} from "vue-template-compiler";
+import { compile, parseComponent } from "vue-template-compiler";
 import computeReactData from "./computeReactData";
 import getComponentConfig from "./getComponentConfig";
-import { parse, parseExpression } from "./parser";
-
-const vueAttrToReactAttr = (
-  vueAttr: ASTElement["attrsList"][number]
-): JSXAttribute => {
-  if (vueAttr.name.startsWith(":")) {
-    const name = vueAttr.name.slice(1);
-    return {
-      type: "JSXAttribute",
-      name: { type: "JSXIdentifier", name },
-      value: {
-        type: "JSXExpressionContainer",
-        expression: parseExpression(vueAttr.value),
-      },
-    };
-  } else {
-    return {
-      type: "JSXAttribute",
-      name: { type: "JSXIdentifier", name: vueAttr.name },
-      value: { type: "StringLiteral", value: vueAttr.value },
-    };
-  }
-};
-
-const templateAstToJsxAst = (
-  templateAst: ASTNode
-): JSXElement | JSXText | JSXExpressionContainer => {
-  switch (templateAst.type) {
-    case 1: {
-      // html
-      return {
-        type: "JSXElement",
-        openingElement: {
-          attributes: templateAst.attrsList.map(vueAttrToReactAttr),
-          name: { name: templateAst.tag, type: "JSXIdentifier" },
-          selfClosing: false,
-          type: "JSXOpeningElement",
-          typeParameters: undefined,
-        },
-        closingElement: {
-          name: { name: templateAst.tag, type: "JSXIdentifier" },
-          type: "JSXClosingElement",
-        },
-        children: templateAst.children.map(templateAstToJsxAst),
-      };
-    }
-    case 2: {
-      // moustache
-      // '{{ foo }}' -> 'foo'
-      const expressionStr = templateAst.text.slice(0, -2).slice(2);
-      return {
-        type: "JSXExpressionContainer",
-        expression: parseExpression(expressionStr),
-      };
-    }
-    case 3: {
-      // text
-      return {
-        type: "JSXText",
-        value: templateAst.text || "",
-      };
-    }
-  }
-};
+import { parse } from "./parser";
+import templateAstToJsxAst from "./templateAstToJsxAst";
 
 export default (vueStr: string) => {
   const sfcDescriptor = parseComponent(vueStr);
