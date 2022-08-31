@@ -1,6 +1,7 @@
 {
-  "name": "vue-to-react",
+  "name": "vue2-to-react",
   "version": "0.0.0",
+  "description": "A tool to convert Vue2 SFCs to their equivalent React components",
   "author": {
     "name": "Nino Filiu",
     "email": "nino.filiu@gmail.com",
