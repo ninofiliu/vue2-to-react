@@ -1,5 +1,5 @@
 import generate from "@babel/generator";
-import vueStrToTsxAst from "./vueStrToTsxAst";
+import vueStrToReactAst from "./vueStrToReactAst";
 
 export default (vueStr: string): string =>
-  generate(vueStrToTsxAst(vueStr)).code;
+  generate(vueStrToReactAst(vueStr)).code;

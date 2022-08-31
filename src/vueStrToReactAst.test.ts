@@ -1,7 +1,7 @@
 import { resolve } from "path";
 import { readdirSync } from "fs";
 import { readFile } from "fs/promises";
-import vueStrToTsxAst from "./vueStrToTsxAst";
+import vueStrToReactAst from "./vueStrToReactAst";
 import expectAstsToBeEquivalent from "./expectAstsToBeEquivalent";
 import parse from "./parse";
 
@@ -20,7 +20,7 @@ for (const tsxPath of dir.filter((name) => name.endsWith(".tsx"))) {
       resolve(__dirname, "../fixtures", vuePath),
       "utf8"
     );
-    const actualAst = vueStrToTsxAst(vueStr);
+    const actualAst = vueStrToReactAst(vueStr);
     expectAstsToBeEquivalent(actualAst, tsxAst);
   });
 }
